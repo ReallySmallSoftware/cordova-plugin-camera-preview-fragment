@@ -2,26 +2,36 @@ package com.cordovaplugincamerapreview;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.graphics.Color;
+import android.graphics.Point;
 import android.hardware.Camera;
+import android.net.Uri;
 import android.os.Handler;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.util.SizeF;
 import android.util.TypedValue;
+import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.FrameLayout;
 
+import androidx.core.content.FileProvider;
+
+import org.apache.cordova.BuildHelper;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PluginResult;
@@ -32,6 +42,7 @@ import org.json.JSONException;
 import java.io.File;
 import java.util.List;
 import java.util.Arrays;
+import java.util.UUID;
 
 public class CameraPreview extends CordovaPlugin implements CameraActivity.CameraPreviewListener {
 
@@ -98,8 +109,6 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
 
   private CallbackContext execCallback;
   private JSONArray execArgs;
-
-  private ViewParent webViewParent;
 
   private int containerViewId = 20; //<- set to random number to prevent conflict with other plugins
   public CameraPreview(){
@@ -290,13 +299,42 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
 
     DisplayMetrics metrics = cordova.getActivity().getResources().getDisplayMetrics();
 
+    final Integer paddingBottom = 0;
+
     // offset
-    int computedX = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, x, metrics);
-    int computedY = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, y, metrics);
+    int computedX = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, 0, metrics);
+    int computedY = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, 0, metrics);
 
     // size
-    int computedWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, width, metrics);
-    int computedHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, height, metrics);
+    int computedWidth;
+    int computedHeight;
+    int computedPaddingBottom;
+
+    if(paddingBottom != 0) {
+      computedPaddingBottom = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, paddingBottom, metrics);
+    } else {
+      computedPaddingBottom = 0;
+    }
+
+    if(width != 0) {
+      computedWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, width, metrics);
+    } else {
+      Display defaultDisplay = cordova.getActivity().getWindowManager().getDefaultDisplay();
+      final Point size = new Point();
+      defaultDisplay.getSize(size);
+
+      computedWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, size.x, metrics);
+    }
+
+    if(height != 0) {
+      computedHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, height, metrics) - computedPaddingBottom;
+    } else {
+      Display defaultDisplay = cordova.getActivity().getWindowManager().getDefaultDisplay();
+      final Point size = new Point();
+      defaultDisplay.getSize(size);
+
+      computedHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, size.y, metrics) - computedPaddingBottom;
+    }
 
     fragment.setRect(computedX, computedY, computedWidth, computedHeight);
 
@@ -306,60 +344,49 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
       @Override
       public void run() {
 
-        //create or update the layout params for the container view
-        FrameLayout containerView = (FrameLayout)cordova.getActivity().findViewById(containerViewId);
+
+        FrameLayout containerView = cordova.getActivity().findViewById(containerViewId);
         if(containerView == null){
           containerView = new FrameLayout(cordova.getActivity().getApplicationContext());
           containerView.setId(containerViewId);
 
-          FrameLayout.LayoutParams containerLayoutParams = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
-          cordova.getActivity().addContentView(containerView, containerLayoutParams);
+          ((ViewGroup)webView.getView()).setBackgroundColor(Color.TRANSPARENT);
+          ((ViewGroup)webView.getView().getParent()).addView(containerView);
+          ((ViewGroup)webView.getView()).getParent().bringChildToFront(webView.getView());
+
+          FragmentManager fragmentManager = cordova.getActivity().getFragmentManager();
+
+          Intent intent = cordova.getActivity().getIntent();
+
+          Uri imageUri = Uri.fromFile(new File(getTempFilePath()));
+
+          intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+          intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+          intent.putExtra("output", imageUri);
+
+          FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+          fragmentTransaction.add(containerView.getId(), fragment);
+          fragmentTransaction.commit();
         }
-
-        //display camera below the webview
-        if(toBack){
-          View view = webView.getView();
-          ViewParent rootParent = containerView.getParent();
-          ViewParent curParent = view.getParent();
-
-          view.setBackgroundColor(0x00000000);
-
-          // If parents do not match look for.
-          if(curParent.getParent() != rootParent) {
-            while(curParent != null && curParent.getParent() != rootParent) {
-              curParent = curParent.getParent();
-            }
-
-            if(curParent != null) {
-              ((ViewGroup)curParent).setBackgroundColor(0x00000000);
-              ((ViewGroup)curParent).bringToFront();
-            } else {
-              // Do default...
-              curParent = view.getParent();
-              webViewParent = curParent;
-              ((ViewGroup)view).bringToFront();
-            }
-          }else{
-            // Default
-            webViewParent = curParent;
-            ((ViewGroup)view).bringToFront();
-          }
-
-        }else{
-          //set camera back to front
-          containerView.setAlpha(opacity);
-          containerView.bringToFront();
-        }
-
-        //add the fragment to the container
-        FragmentManager fragmentManager = cordova.getActivity().getFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.add(containerView.getId(), fragment);
-        fragmentTransaction.commit();
       }
     });
 
     return true;
+  }
+
+  private String getTempDirectoryPath() {
+    File cache = null;
+
+    // Use internal storage
+    cache = cordova.getActivity().getCacheDir();
+
+    // Create the cache directory if it doesn't exist
+    cache.mkdirs();
+    return cache.getAbsolutePath();
+  }
+
+  private String getTempFilePath() {
+    return getTempDirectoryPath() + "/cpcp_capture_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8) + ".jpg";
   }
 
   public void onCameraStarted() {
@@ -426,7 +453,7 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
     takePictureCallbackContext.error(message);
   }
 
-  private boolean startRecordVideo(final String camera, final int width, final int height, final int quality, final boolean withFlash, CallbackContext callbackContext) {
+  private boolean startRecordVideo(String camera, int width, int height, int quality, boolean withFlash, CallbackContext callbackContext) {
     if(this.hasView(callbackContext) == false){
       return true;
     }
@@ -990,25 +1017,22 @@ public class CameraPreview extends CordovaPlugin implements CameraActivity.Camer
   }
 
   private boolean stopCamera(CallbackContext callbackContext) {
-    if(webViewParent != null) {
       cordova.getActivity().runOnUiThread(new Runnable() {
         @Override
         public void run() {
-          ((ViewGroup)webView.getView()).bringToFront();
-          webViewParent = null;
+          FrameLayout containerView = cordova.getActivity().findViewById(containerViewId);
+
+          if (containerView != null) {
+            ((ViewGroup)webView.getView().getParent()).removeView(containerView);
+            webView.getView().setBackgroundColor(Color.WHITE);
+            FragmentManager fragmentManager = cordova.getActivity().getFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.remove(fragment);
+            fragmentTransaction.commit();
+            fragment = null;
+          }
         }
       });
-    }
-
-    if(this.hasView(callbackContext) == false){
-      return true;
-    }
-
-    FragmentManager fragmentManager = cordova.getActivity().getFragmentManager();
-    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-    fragmentTransaction.remove(fragment);
-    fragmentTransaction.commit();
-    fragment = null;
 
     callbackContext.success();
     return true;

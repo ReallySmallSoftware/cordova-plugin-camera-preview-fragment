@@ -1,6 +1,7 @@
 package com.cordovaplugincamerapreview;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.app.Fragment;
 import android.content.Context;
@@ -8,6 +9,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.media.AudioManager;
+import android.net.Uri;
+import android.provider.MediaStore;
 import android.util.Base64;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -429,21 +432,6 @@ public class CameraActivity extends Fragment {
     return 0;
   }
 
-  private String getTempDirectoryPath() {
-    File cache = null;
-
-    // Use internal storage
-    cache = getActivity().getCacheDir();
-
-    // Create the cache directory if it doesn't exist
-    cache.mkdirs();
-    return cache.getAbsolutePath();
-  }
-
-  private String getTempFilePath() {
-    return getTempDirectoryPath() + "/cpcp_capture_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8) + ".jpg";
-  }
-
   PictureCallback jpegPictureCallback = new PictureCallback(){
     public void onPictureTaken(byte[] data, Camera arg1){
       Log.d(TAG, "CameraPreview jpegPictureCallback");
@@ -479,12 +467,17 @@ public class CameraActivity extends Fragment {
 
           eventListener.onPictureTaken(encodedImage);
         } else {
-          String path = getTempFilePath();
-          FileOutputStream out = new FileOutputStream(path);
+
+
+          Uri uri = getActivity().getIntent().getParcelableExtra("output");
+
+          FileOutputStream out = new FileOutputStream(uri.getPath());
           out.write(data);
           out.close();
-          eventListener.onPictureTaken(path);
+          
+          eventListener.onPictureTaken(uri.toString());
         }
+
         Log.d(TAG, "CameraPreview pictureTakenHandler called back");
       } catch (OutOfMemoryError e) {
         // most likely failed to allocate memory for rotateBitmap
@@ -811,12 +804,13 @@ public class CameraActivity extends Fragment {
 
       Camera.Parameters parameters = mCamera.getParameters();
 
-      Rect focusRect = calculateTapArea(pointX, pointY);
+      Rect focusRect = calculateTapArea(pointX, pointY, 1f);
       parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
       parameters.setFocusAreas(Arrays.asList(new Camera.Area(focusRect, 1000)));
 
       if (parameters.getMaxNumMeteringAreas() > 0) {
-        parameters.setMeteringAreas(Arrays.asList(new Camera.Area(focusRect, 1000)));
+        Rect meteringRect = calculateTapArea(pointX, pointY, 1.5f);
+        parameters.setMeteringAreas(Arrays.asList(new Camera.Area(meteringRect, 1000)));
       }
 
       try {
@@ -829,7 +823,7 @@ public class CameraActivity extends Fragment {
     }
   }
 
-  private Rect calculateTapArea(float x, float y) {
+  private Rect calculateTapArea(float x, float y, float coefficient) {
     if (x < 100) {
       x = 100;
     }

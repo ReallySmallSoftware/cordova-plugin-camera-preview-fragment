@@ -1,4 +1,4 @@
-declare module 'cordova-plugin-camera-preview' {
+declare module 'cordova-plugin-camera-preview-fragment' {
   type CameraPreviewErrorHandler = (err: any) => any;
   type CameraPreviewSuccessHandler = (data: any) => any;
 
