@@ -1,12 +1,10 @@
 # Cordova Plugin Camera Preview
-<a href="https://badge.fury.io/js/cordova-plugin-camera-preview" target="_blank"><img height="21" style='border:0px;height:21px;' border='0' src="https://badge.fury.io/js/cordova-plugin-camera-preview.svg" alt="NPM Version"></a>
-<a href='https://www.npmjs.org/package/cordova-plugin-camera-preview' target='_blank'><img height='21' style='border:0px;height:21px;' src='https://img.shields.io/npm/dt/cordova-plugin-camera-preview.svg?label=NPM+Downloads' border='0' alt='NPM Downloads' /></a>
+<a href="https://badge.fury.io/js/cordova-plugin-camera-preview-fragment" target="_blank"><img height="21" style='border:0px;height:21px;' border='0' src="https://badge.fury.io/js/cordova-plugin-camera-preview-fragment.svg" alt="NPM Version"></a>
+<a href='https://www.npmjs.org/package/cordova-plugin-camera-preview-fragment' target='_blank'><img height='21' style='border:0px;height:21px;' src='https://img.shields.io/npm/dt/cordova-plugin-camera-preview-fragment.svg?label=NPM+Downloads' border='0' alt='NPM Downloads' /></a>
 
 Cordova plugin that allows camera interaction from Javascript and HTML
 
-**Releases are being kept up to date when appropriate. However, this plugin is under constant development. As such it is recommended to use master to always have the latest fixes & features.**
-
-**PR's are greatly appreciated.**
+This is a fork of [cordova-plugin-camera-preview]:(https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview). It has been updated to work with [cordova-plugin-android-fragmentactivity]:(https://github.com/ReallySmallSoftware/cordova-plugin-android-fragmentactivity)
 
 # Features
 
@@ -32,25 +30,17 @@ Use any one of the installation methods listed below depending on which framewor
 To install the master version with latest fixes and features
 
 ```
-cordova plugin add https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git
+cordova plugin add cordova-plugin-camera-preview-fragment
 
-ionic cordova plugin add https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git
-
-meteor add cordova:cordova-plugin-camera-preview@https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git#[latest_commit_id]
-
-<plugin spec="https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview.git" source="git" />
+<plugin spec="https://github.com/ReallySmallSoftware/cordova-plugin-camera-preview-fragment.git" source="git" />
 ```
 
 or if you want to use the last released version on npm
 
 ```
-cordova plugin add cordova-plugin-camera-preview
+cordova plugin add cordova-plugin-camera-preview-fragment
 
-ionic cordova plugin add cordova-plugin-camera-preview
-
-meteor add cordova:cordova-plugin-camera-preview@X.X.X
-
-<gap:plugin name="cordova-plugin-camera-preview" />
+<gap:plugin name="cordova-plugin-camera-preview-fragment" />
 ```
 
 #### iOS Quirks
@@ -656,16 +646,8 @@ Note: Use AUTO to allow the device automatically adjusts the exposure once and t
 | TWILIGHT | string | twilight | |
 | WARM_FLUORESCENT | string | warm-fluorescent | |
 
-# Sample App
-
-<a href="https://github.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview-sample-app">cordova-plugin-camera-preview-sample-app</a> for a complete working Cordova example for Android and iOS platforms.
-
-# Screenshots
-
-<img src="https://raw.githubusercontent.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview/master/img/android-1.png"/> <img hspace="20" src="https://raw.githubusercontent.com/cordova-plugin-camera-preview/cordova-plugin-camera-preview/master/img/android-2.png"/>
-
 # Credits
 
-Maintained by [Weston Ganger](https://westonganger.com) - [@westonganger](https://github.com/westonganger)
+Based on cordova-plugin-camera-preview by [Weston Ganger](https://westonganger.com) - [@westonganger](https://github.com/westonganger)
 
 Created by Marcel Barbosa Pinto [@mbppower](https://github.com/mbppower)
