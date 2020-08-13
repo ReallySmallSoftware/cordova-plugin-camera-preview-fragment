@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.2 - August 13, 2020
+- Updated repo info
+
 ## v1.0.1 - August 13, 2020
 - Updated readme
 
